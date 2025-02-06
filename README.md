@@ -55,7 +55,7 @@ This is the part where I preprocess the data before training them in the model:
 ### 5 Model Saving
 I saved the model, with the pipeline included using joblib
 ### 6 Inference and deployment
-On the inference part, I test the model using a new data I made myself. The problem in the inference part and maybe at the deployment part is that the model cannot recognize age as an indicator of attrition if you take a look at the file `P1M2_Bramantyo_inf.ipynb`
+On the inference part, I test the model using a new data I made myself. The problem in the inference part and maybe at the deployment part is that the model cannot recognize age as an indicator of attrition if you take a look at the file `P1M2_Bramantyo_inf.ipynb`. The deployment folder consists of file needed to deploy the model that is made to Hugging Face.
 ### 7 Conclusion & Suggestion
 The model that is developed has successfully reduce the number of false negative to only 4% which may make it reliable if used for the people inside the company. However, we cannot use this for potential candidates as seen within the inference file.
 

@@ -1,4 +1,5 @@
 ![Alt text](image.jpg.crdownload)
+source img: https://www.callcentrehelper.com/what-is-attrition-209083.htm
 # 📊 Project Title: Employee Attrition Prediction
 ## 📝 Overview
 This is a Data Science Project using a classification machine learning algorithm where I predict whether an employee would be attrited or not. Attrited by definition is when an employee were to exit a company by any causes. Companies will benefit more if they were to know an employee would be attrited before the attrition happened, because keeping an employee will be more cost effective than hiring new ones. This model can be useful for managers, or HR teams.

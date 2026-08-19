@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Employee Attrition Prediction</title>
+<style>
+  /* Design tokens. Light values live on :root and are overridden for dark. */
+  :root {
+    --bg: #f4f6f9;
+    --surface: #ffffff;
+    --border: #dde3ec;
+    --text: #1a2233;
+    --text-muted: #64708a;
+    --accent: #2f5fd8;
+    --accent-text: #ffffff;
+    --danger-bg: #fdecec;
+    --danger-border: #f0b4b4;
+    --danger-text: #9b2020;
+    --safe-bg: #e9f7ee;
+    --safe-border: #a8ddbc;
+    --safe-text: #1a6b39;
+    --warn-bg: #fff6e5;
+    --warn-border: #f2d199;
+    --warn-text: #8a5a00;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12161f;
+      --surface: #1b212d;
+      --border: #2e3747;
+      --text: #e8ecf4;
+      --text-muted: #9aa6bd;
+      --accent: #5c8bff;
+      --accent-text: #0d1017;
+      --danger-bg: #3a1d1d;
+      --danger-border: #6b3030;
+      --danger-text: #ffb3b3;
+      --safe-bg: #16301f;
+      --safe-border: #2c5a3b;
+      --safe-text: #9fe3b8;
+      --warn-bg: #33280f;
+      --warn-border: #5e4a1c;
+      --warn-text: #f0cd8a;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 2rem 1rem;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+  }
+
+  .wrap { max-width: 760px; margin: 0 auto; }
+
+  header { margin-bottom: 1.5rem; }
+  h1 { margin: 0 0 .25rem; font-size: 1.6rem; }
+  .sub { color: var(--text-muted); font-size: .92rem; margin: 0; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+  }
+
+  fieldset {
+    border: none;
+    border-top: 1px solid var(--border);
+    padding: 1.25rem 0 0;
+    margin: 0 0 1.25rem;
+  }
+  fieldset:first-of-type { border-top: none; padding-top: 0; }
+
+  legend {
+    font-size: .78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--text-muted);
+    padding: 0;
+    margin-bottom: .85rem;
+  }
+
+  /* Two columns on wide screens, one on narrow. */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+
+  label { display: block; font-size: .87rem; font-weight: 500; margin-bottom: .3rem; }
+  .hint { display: block; font-weight: 400; color: var(--text-muted); font-size: .78rem; }
+
+  input, select {
+    width: 100%;
+    padding: .55rem .65rem;
+    font: inherit;
+    font-size: .92rem;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  input:focus, select:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-color: var(--accent);
+  }
+  /* Browsers flag values outside the min/max the API also enforces. */
+  input:invalid { border-color: var(--danger-border); }
+
+  .actions { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
+
+  button {
+    font: inherit;
+    font-weight: 600;
+    padding: .6rem 1.4rem;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    cursor: pointer;
+  }
+  button[type="submit"] { background: var(--accent); color: var(--accent-text); }
+  button.secondary { background: transparent; color: var(--text-muted); border-color: var(--border); }
+  button:disabled { opacity: .6; cursor: not-allowed; }
+
+  /* Result panel: hidden until a prediction comes back. */
+  #result { margin-top: 1.25rem; border-radius: 8px; padding: 1.1rem 1.25rem; border: 1px solid; }
+  #result[hidden] { display: none; }
+  #result.leave { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger-text); }
+  #result.stay  { background: var(--safe-bg);   border-color: var(--safe-border);   color: var(--safe-text); }
+  #result.error { background: var(--warn-bg);   border-color: var(--warn-border);   color: var(--warn-text); }
+
+  .verdict { font-size: 1.12rem; font-weight: 700; margin: 0 0 .3rem; }
+  .detail { margin: 0; font-size: .9rem; }
+
+  /* Probability bar. currentColor keeps it in sync with the panel state. */
+  .meter {
+    margin-top: .8rem;
+    height: 7px;
+    border-radius: 4px;
+    background: rgba(128, 128, 128, .25);
+    overflow: hidden;
+  }
+  .meter > div { height: 100%; background: currentColor; width: 0; transition: width .35s ease; }
+
+  footer { margin-top: 1.25rem; text-align: center; font-size: .8rem; color: var(--text-muted); }
+  code { font-size: .85em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Employee Attrition Prediction</h1>
+      <p><a href="https://github.com/BramD1/Employee-Attrition-Prediction" target="_blank">Source code on GitHub</a></p>
+    <p class="sub">Enter an employee's details to estimate their likelihood of leaving.</p>
+  </header>
+
+  <div class="card">
+    <!-- novalidate is deliberately NOT set: the min/max below mirror the API's
+         Pydantic bounds, so the browser catches bad values before the request. -->
+    <form id="form">
+
+      <fieldset>
+        <legend>Employee</legend>
+        <div class="grid">
+          <div>
+            <label for="EmployeeName">Name <span class="hint">Label only — not used by the model</span></label>
+            <input id="EmployeeName" name="EmployeeName" type="text" placeholder="Jane Doe">
+          </div>
+          <div>
+            <label for="Age">Age <span class="hint">18–75</span></label>
+            <input id="Age" name="Age" type="number" required min="18" max="75" value="34">
+          </div>
+          <div>
+            <label for="Department">Department</label>
+            <select id="Department" name="Department" required>
+              <option value="Sales" selected>Sales</option>
+              <option value="Research &amp; Development">Research &amp; Development</option>
+              <option value="Human Resources">Human Resources</option>
+            </select>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Compensation &amp; Commute</legend>
+        <div class="grid">
+          <div>
+            <label for="MonthlyIncome">Monthly income</label>
+            <input id="MonthlyIncome" name="MonthlyIncome" type="number" required min="0" value="5500">
+          </div>
+          <div>
+            <label for="DailyRate">Daily rate</label>
+            <input id="DailyRate" name="DailyRate" type="number" required min="0" value="800">
+          </div>
+          <div>
+            <label for="DistanceFromHome">Distance from home <span class="hint">In miles</span></label>
+            <input id="DistanceFromHome" name="DistanceFromHome" type="number" required min="0" value="5">
+          </div>
+          <div>
+            <label for="StockOptionLevel">Stock option level <span class="hint">0–3</span></label>
+            <input id="StockOptionLevel" name="StockOptionLevel" type="number" required min="0" max="3" value="1">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Experience</legend>
+        <div class="grid">
+          <div>
+            <label for="TotalWorkingYears">Total working years <span class="hint">0–60</span></label>
+            <input id="TotalWorkingYears" name="TotalWorkingYears" type="number" required min="0" max="60" value="8">
+          </div>
+          <div>
+            <label for="YearsAtCompany">Years at company <span class="hint">0–60</span></label>
+            <input id="YearsAtCompany" name="YearsAtCompany" type="number" required min="0" max="60" value="4">
+          </div>
+          <div>
+            <label for="TrainingTimesLastYear">Trainings last year <span class="hint">0–10</span></label>
+            <input id="TrainingTimesLastYear" name="TrainingTimesLastYear" type="number" required min="0" max="10" value="2">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Work Pattern</legend>
+        <div class="grid">
+          <div>
+            <label for="BusinessTravel">Business travel</label>
+            <select id="BusinessTravel" name="BusinessTravel" required>
+              <option value="Non-Travel">Non-Travel</option>
+              <option value="Travel_Rarely" selected>Travel Rarely</option>
+              <option value="Travel_Frequently">Travel Frequently</option>
+            </select>
+          </div>
+          <div>
+            <label for="OverTime">Works overtime</label>
+            <select id="OverTime" name="OverTime" required>
+              <option value="No" selected>No</option>
+              <option value="Yes">Yes</option>
+            </select>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Satisfaction Scores <span style="text-transform:none;letter-spacing:0;font-weight:400">(1 = low, 4 = high)</span></legend>
+        <div class="grid">
+          <div>
+            <label for="EnvironmentSatisfaction">Environment</label>
+            <select id="EnvironmentSatisfaction" name="EnvironmentSatisfaction" required>
+              <option value="1">1 — Low</option>
+              <option value="2">2 — Medium</option>
+              <option value="3" selected>3 — High</option>
+              <option value="4">4 — Very High</option>
+            </select>
+          </div>
+          <div>
+            <label for="JobSatisfaction">Job</label>
+            <select id="JobSatisfaction" name="JobSatisfaction" required>
+              <option value="1">1 — Low</option>
+              <option value="2">2 — Medium</option>
+              <option value="3" selected>3 — High</option>
+              <option value="4">4 — Very High</option>
+            </select>
+          </div>
+          <div>
+            <label for="WorkLifeBalance">Work-life balance</label>
+            <select id="WorkLifeBalance" name="WorkLifeBalance" required>
+              <option value="1">1 — Bad</option>
+              <option value="2">2 — Good</option>
+              <option value="3" selected>3 — Better</option>
+              <option value="4">4 — Best</option>
+            </select>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="actions">
+        <button type="submit" id="submitBtn">Predict Attrition</button>
+        <button type="reset" class="secondary">Reset</button>
+      </div>
+    </form>
+
+    <!-- Populated by showResult(). aria-live announces updates to screen readers. -->
+    <div id="result" hidden role="status" aria-live="polite">
+      <p class="verdict" id="verdict"></p>
+      <p class="detail" id="detail"></p>
+      <div class="meter" id="meter" hidden><div id="meterFill"></div></div>
+    </div>
+  </div>
+
+  <footer>Powered by a tuned SVC model served from FastAPI on Cloud Run.</footer>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// CONFIGURE ME: paste your Cloud Run service URL below, with no trailing slash.
+// It looks like https://employee-attrition-api-xxxxxxxxxx.asia-southeast2.run.app
+//
+// When this page is opened from localhost it targets a locally running
+// container instead, so you can test changes without redeploying.
+// ─────────────────────────────────────────────────────────────────────────────
+const CLOUD_RUN_URL = "https://employee-attrition-api-659207822671.asia-southeast2.run.app";
+
+const isLocal = ["localhost", "127.0.0.1", ""].includes(location.hostname);
+const API_BASE_URL = isLocal ? "http://localhost:8000" : CLOUD_RUN_URL;
+
+// Fields the API expects as numbers. Everything from a form control arrives as
+// a string, so these are converted before sending - "34" would fail validation
+// where 34 succeeds.
+const NUMERIC_FIELDS = [
+  "Age", "DailyRate", "DistanceFromHome", "MonthlyIncome",
+  "TotalWorkingYears", "TrainingTimesLastYear", "YearsAtCompany",
+  "EnvironmentSatisfaction", "JobSatisfaction", "StockOptionLevel",
+  "WorkLifeBalance",
+];
+
+const form = document.getElementById("form");
+const submitBtn = document.getElementById("submitBtn");
+const resultBox = document.getElementById("result");
+const verdictEl = document.getElementById("verdict");
+const detailEl = document.getElementById("detail");
+const meterEl = document.getElementById("meter");
+const meterFill = document.getElementById("meterFill");
+
+/** Collect the form into the JSON shape POST /predict expects. */
+function buildPayload() {
+  const payload = {};
+
+  for (const [key, value] of new FormData(form).entries()) {
+    payload[key] = NUMERIC_FIELDS.includes(key) ? Number(value) : value;
+  }
+
+  // EmployeeName is optional on the API. Send null rather than "" so an empty
+  // box reads as "not provided" instead of a blank name.
+  if (!payload.EmployeeName) payload.EmployeeName = null;
+
+  return payload;
+}
+
+/** Render a prediction or an error into the result panel. */
+function showResult({ state, verdict, detail, probability }) {
+  resultBox.className = state;          // drives the colour via CSS
+  verdictEl.textContent = verdict;
+  detailEl.textContent = detail;
+
+  if (probability === undefined) {
+    meterEl.hidden = true;
+  } else {
+    meterEl.hidden = false;
+    meterFill.style.width = `${(probability * 100).toFixed(1)}%`;
+  }
+
+  resultBox.hidden = false;
+  resultBox.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+/** Turn a non-2xx response into a message that explains what to do next. */
+async function describeError(response) {
+  if (response.status === 422) {
+    // FastAPI returns {detail: [{loc, msg, ...}]} for validation failures.
+    const body = await response.json().catch(() => null);
+    const first = body?.detail?.[0];
+    const field = first?.loc?.slice(1).join(".") ?? "a field";
+    return `${field} was rejected: ${first?.msg ?? "invalid value"}.`;
+  }
+  if (response.status === 429) {
+    return "Rate limit reached — the API accepts 10 predictions per minute. Wait a moment and try again.";
+  }
+  if (response.status === 503) {
+    return "The service is starting up (cold start). Try again in a few seconds.";
+  }
+  return `The API responded with HTTP ${response.status}.`;
+}
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();   // stop the browser navigating away
+
+  if (CLOUD_RUN_URL.includes("YOUR-SERVICE-URL") && !isLocal) {
+    showResult({
+      state: "error",
+      verdict: "Not configured",
+      detail: "Set CLOUD_RUN_URL near the bottom of index.html to your Cloud Run service URL.",
+    });
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Predicting…";
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/predict`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(buildPayload()),
+    });
+
+    if (!response.ok) {
+      showResult({ state: "error", verdict: "Prediction failed", detail: await describeError(response) });
+      return;
+    }
+
+    const data = await response.json();
+    const who = data.EmployeeName || "This employee";
+    const pct = (data.attrition_probability * 100).toFixed(1);
+
+    showResult({
+      state: data.attrition ? "leave" : "stay",
+      verdict: data.attrition
+        ? `${who} is likely to leave`
+        : `${who} is likely to stay`,
+      detail: `Estimated probability of leaving: ${pct}%`,
+      probability: data.attrition_probability,
+    });
+
+  } catch (err) {
+    // fetch() rejects on network failure and on blocked CORS - the browser
+    // deliberately hides which, so cover both in the message.
+    showResult({
+      state: "error",
+      verdict: "Could not reach the API",
+      detail: `No response from ${API_BASE_URL}. Check the service is running and that CORS is enabled. (${err.message})`,
+    });
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Predict Attrition";
+  }
+});
+
+// Clear any previous verdict when the form is reset.
+form.addEventListener("reset", () => { resultBox.hidden = true; });
+</script>
+</body>
+</html>

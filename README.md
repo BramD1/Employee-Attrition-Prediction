@@ -6,7 +6,7 @@
 This is a Data Science Project using a classification machine learning algorithm where I predict whether an employee would be attrited or not. Attrited by definition is when an employee were to exit a company by any causes. Companies will benefit more if they were to know an employee would be attrited before the attrition happened, because keeping an employee will be more cost effective than hiring new ones. This model can be useful for managers, or HR teams.
 
 ## Deployment Link (Hugging Face):
-https://huggingface.co/spaces/Bram33/Employee_Attrition 
+https://employee-attrition-test-bram.netlify.app/
 
 ## 📂 Dataset
 Source: https://www.kaggle.com/datasets/pavansubhasht/ibm-hr-analytics-attrition-dataset/data 
@@ -58,12 +58,11 @@ This is the part where I preprocess the data before training them in the model:
 ### 5 Model Saving
 I saved the model, with the pipeline included using joblib
 ### 6 Inference and deployment
-On the inference part, I test the model using a new data I made myself. The problem in the inference part and maybe at the deployment part is that the model cannot recognize age as an indicator of attrition if you take a look at the file `P1M2_Bramantyo_inf.ipynb`. The deployment folder consists of file needed to deploy the model that is made to Hugging Face.
+On the inference part, I test the model using a new data I made myself. The problem in the inference part and maybe at the deployment part is that the model cannot recognize age as an indicator of attrition if you take a look at the file `P1M2_Bramantyo_inf.ipynb`. The old deployment folder consists of file needed to deploy the model that is made to Hugging Face.
 ### 7 Conclusion & Suggestion
 The model that is developed has successfully reduce the number of false negative to only 4% which may make it reliable if used for the people inside the company. However, we cannot use this for potential candidates as seen within the inference file.
-
 ### 8 Update about deployment
-api\ is the folder that consist of the modular python for deployment purposes. Trying how to learn to deploy model
+api\ is the folder that consist of the modular python for deployment purposes. The entire folder consists of the necessary deployment architecture for the app. The model is deployed in GCP, while the frontend is in Netlify.
 
 The only suggestion for this model is that we need more data to convince the model that age is a significant factor for attrition.
 

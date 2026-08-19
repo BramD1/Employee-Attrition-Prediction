@@ -1,9 +1,17 @@
+# Exact versions are pinned so the container builds identically every time.
+# The scientific stack in particular must match what the model was trained with:
+# unpickling a scikit-learn model with a different version can warn, misbehave,
+# or fail outright.
+
+# --- Web layer ---
 fastapi==0.115.4
-uvicorn[standard]==0.32.0
-pydantic==2.9.2
+uvicorn[standard]==0.32.0   # ASGI server; [standard] adds uvloop/httptools for speed
+pydantic==2.9.2             # request validation (see app/schemas.py)
+slowapi==0.1.9              # per-IP rate limiting on /predict
+
+# --- Model layer (versions must match the training environment) ---
 pandas==1.5.3
 numpy==1.26.4
 scikit-learn==1.5.1
-imbalanced-learn==0.12.4
-joblib==1.4.2
-slowapi==0.1.9
+imbalanced-learn==0.12.4    # provides the SMOTE step baked into the saved pipeline
+joblib==1.4.2               # loads model_best.pkl

@@ -62,6 +62,9 @@ On the inference part, I test the model using a new data I made myself. The prob
 ### 7 Conclusion & Suggestion
 The model that is developed has successfully reduce the number of false negative to only 4% which may make it reliable if used for the people inside the company. However, we cannot use this for potential candidates as seen within the inference file.
 
+### 8 Update about deployment
+api\ is the folder that consist of the modular python for deployment purposes. Trying how to learn to deploy model
+
 The only suggestion for this model is that we need more data to convince the model that age is a significant factor for attrition.
 
 ## Thank You For Visiting!!
